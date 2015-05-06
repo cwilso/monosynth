@@ -4,7 +4,7 @@
 	<title>Web MIDI monosynth using Web Audio</title>
 
 	<!-- Set up Web MIDI polyfill -->
-    <script src='http://cwilso.github.com/WebMIDIAPIShim/WebMIDIAPI.js'></script>
+    <script src='//cwilso.github.com/WebMIDIAPIShim/lib/WebMIDIAPI.js'></script>
 
 	<script>
 		/* Copyright 2013 Chris Wilson
@@ -51,27 +51,24 @@
 			oscillator.start(0);  // Go ahead and start up the oscillator
 		} );
 
+		function hookUpMIDIInput() {
+			var haveAtLeastOneDevice=false;
+		    var inputs=midiAccess.inputs.values();
+		    for ( var input = inputs.next(); input && !input.done; input = inputs.next()) {
+		    	input.value.onmidimessage = MIDIMessageEventHandler;
+		    	haveAtLeastOneDevice = true;
+		    }
+		    var badtime = document.getElementById("badtime");
+
+		    if (badtime)
+		    	badtime.style.visibility = haveAtLeastOneDevice ?
+		    		"hidden" : "visible";
+		}
 		function onMIDIInit(midi) {
 			midiAccess = midi;
 
-			if ((typeof(midiAccess.inputs) == "function")) {  //Old Skool MIDI inputs() code
-				var inputs=midiAccess.inputs();
-				if (inputs.length === 0)
-					alert("No MIDI input devices present.  You're gonna have a bad time.")
-				else { // Hook the message handler for all MIDI inputs
-					for (var i=0;i<inputs.length;i++)
-						inputs[i].onmidimessage = MIDIMessageEventHandler;
-				}
-			} else {  // new MIDIMap implementation
-				var haveAtLeastOneDevice=false;
-			    var inputs=midiAccess.inputs.values();
-			    for ( var input = inputs.next(); input && !input.done; input = inputs.next()) {
-			    	input.value.onmidimessage = MIDIMessageEventHandler;
-			    	haveAtLeastOneDevice = true;
-			    }
-			    if (!haveAtLeastOneDevice)
-					alert("No MIDI input devices present.  You're gonna have a bad time.");
-			}
+			hookUpMIDIInput();
+			midiAccess.onstatechange=hookUpMIDIInput;
 		}
 
 		function onMIDIReject(err) {
@@ -122,5 +119,7 @@
 </head>
 <body>
 	This example uses Web MIDI input (from all available ports and channels) to drive a Web Audio monophonic synthesizer.  There is no UI.  <a href="http://github.com/cwilso/monosynth">Source available on github.</a>
+
+	<h2 id="badtime" style="visibility:hidden">No MIDI input devices present.  You're gonna have a bad time.</h2>
 </body>
 </html>
