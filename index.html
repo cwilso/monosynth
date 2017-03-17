@@ -75,17 +75,31 @@
 			alert("The MIDI system failed to start.  You're gonna have a bad time.");
 		}
 
+		function logMidiEvent(event, noteOn) {
+			var detailedEvent = {
+				type: noteOn ? 'note-on' : 'note-off',
+				device: event.data[0],
+				note: event.data[1],
+				velocity: event.data[2]
+			};
+			var message = JSON.stringify(detailedEvent);
+			console.log(message);
+		}
+
 		function MIDIMessageEventHandler(event) {
+
 			// Mask off the lower nibble (MIDI channel, which we don't care about)
 			switch (event.data[0] & 0xf0) {
 				case 0x90:
 					if (event.data[2]!=0) {  // if velocity != 0, this is a note-on message
 						noteOn(event.data[1]);
+						logMidiEvent(event, true);
 						return;
 					}
 					// if velocity == 0, fall thru: it's a note-off.  MIDI's weird, ya'll.
 				case 0x80:
 					noteOff(event.data[1]);
+					logMidiEvent(event, false);
 					return;
 			}
 		}
